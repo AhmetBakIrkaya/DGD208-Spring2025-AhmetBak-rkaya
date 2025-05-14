@@ -116,7 +116,7 @@ public class Game
     {
         Console.Clear();
         Console.WriteLine("=== Pet Care Game ===");
-        Console.WriteLine("Student: Ahmet Bakırkaya - 2305041026");
+        Console.WriteLine("Student: Ahmet Bakırkaya - 2305041026 and ChatGPT's Help");
         Console.WriteLine();
         Console.WriteLine("1. Adopt a Pet");
         Console.WriteLine("2. View Pet Stats");
