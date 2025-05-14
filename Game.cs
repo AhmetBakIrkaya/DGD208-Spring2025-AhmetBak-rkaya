@@ -50,7 +50,7 @@ public class Game
     {
         Console.Clear();
         
-        Console.WriteLine("Pet Care Game - Developed by: Ahmet Bakırkaya (2305041026)");
+        Console.WriteLine("Pet Care Game - Developed by: Ahmet Bakırkaya (2305041026) and ChatGPT's Help");
         Console.WriteLine("--------------------------------------------------");
 
         Console.WriteLine("1. Adopt a Pet");
