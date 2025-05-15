@@ -1,65 +1,54 @@
 public class Game
 {
     private bool _isRunning;
+    private bool _petIsDead;
     private Pet _currentPet;
-    
-    
-    
+
+    private CancellationTokenSource _statDecreaseCts;
+
     public async Task Start()
     {
         _isRunning = true;
+        _petIsDead = false;
+
+        // Stat azaltma işlemini başlat
+        StartStatDecreaseLoop();
 
         while (_isRunning)
         {
-            ShowMainMenu(); 
-            string choice = Console.ReadLine(); 
-            await ProcessUserChoice(choice); 
+            if (_petIsDead && _currentPet != null)
+            {
+                Console.Clear();
+                Console.WriteLine($"Sorry! {_currentPet.Name} has died because of neglect.");
+                Console.WriteLine("Press any key to exit...");
+                Console.ReadKey();
+                Environment.Exit(0);
+            }
+
+            ShowMainMenu();
+            string choice = Console.ReadLine();
+            await ProcessUserChoice(choice);
         }
 
-        Console.WriteLine("Thanks for playing Pet Care Game!!! Press any key to exit...");
+        Console.WriteLine("Thanks for playing!");
         Console.ReadKey();
     }
 
     
     
-
-    public async Task GameLoop()
-    {
-        Initialize();
-
-        _isRunning = true;
-        while (_isRunning)
-        {
-            string userChoice = GetUserInput();
-            await ProcessUserChoice(userChoice);
-        }
-
-        Console.WriteLine("Thanks for playing!");
-    }
-
     
-    
-    private void Initialize()
-    {
-        // Future initialization logic here if needed
-    }
-
-    
-    
-    private string GetUserInput()
+    private void ShowMainMenu()
     {
         Console.Clear();
-        
-        Console.WriteLine("Pet Care Game - Developed by: Ahmet Bakırkaya (2305041026) and ChatGPT's Help");
-        Console.WriteLine("--------------------------------------------------");
-
+        Console.WriteLine("=== Pet Care Game ===");
+        Console.WriteLine("Student: Ahmet Bakırkaya - 2305041026 and ChatGPT's Help");
+        Console.WriteLine();
         Console.WriteLine("1. Adopt a Pet");
         Console.WriteLine("2. View Pet Stats");
         Console.WriteLine("3. Use an Item on Your Pet");
         Console.WriteLine("4. Exit Game");
-        Console.Write("Enter choice: ");
-
-        return Console.ReadLine();
+        Console.WriteLine();
+        Console.Write("Enter your choice: ");
     }
 
     
@@ -69,13 +58,13 @@ public class Game
         switch (choice)
         {
             case "1":
-                AdoptPet();
+                await AdoptPet();
                 break;
             case "2":
                 ViewPetStats();
                 break;
             case "3":
-                await UseItemOnPet(); 
+                await UseItemOnPet();
                 break;
             case "4":
                 _isRunning = false;
@@ -85,8 +74,7 @@ public class Game
                 break;
         }
     }
-    
-    
+
     
     
     
@@ -106,55 +94,62 @@ public class Game
         Console.WriteLine("Press any key to return...");
         Console.ReadKey();
     }
-    
-    
-    
-    
-    
-    
-    private void ShowMainMenu()
-    {
-        Console.Clear();
-        Console.WriteLine("=== Pet Care Game ===");
-        Console.WriteLine("Student: Ahmet Bakırkaya - 2305041026 and ChatGPT's Help");
-        Console.WriteLine();
-        Console.WriteLine("1. Adopt a Pet");
-        Console.WriteLine("2. View Pet Stats");
-        Console.WriteLine("3. Use an Item on Your Pet");
-        Console.WriteLine("4. Exit Game");
-        Console.WriteLine();
-        Console.Write("Enter your choice: ");
-    }
 
 
+    
+    
     
     
     private async Task AdoptPet()
     {
         var petTypes = Enum.GetValues(typeof(PetType)).Cast<PetType>().ToList();
-        var petMenu = new Menu<PetType>("Select a Pet to Adopt", petTypes, pt => pt.ToString());
 
-        PetType? selectedType = petMenu.ShowAndGetSelectionNullable(); 
-        if (selectedType == null) return;
+        Console.WriteLine("Select a Pet to Adopt:");
+        Console.WriteLine("0. Go Back");
 
-        Console.Write("Enter a name for your pet: ");
-        string name = Console.ReadLine();
-
-        _currentPet = new Pet
+        for (int i = 0; i < petTypes.Count; i++)
         {
-            Name = name,
-            Type = selectedType.Value,
-            Hunger = 50,
-            Sleep = 50,
-            Fun = 50
-        };
+            Console.WriteLine($"{i + 1}. {petTypes[i]}");
+        }
 
-        Console.WriteLine($"{name} the {selectedType} has been adopted!");
-        await Task.Delay(1500);
+        Console.Write("Enter choice: ");
+        string input = Console.ReadLine();
+
+        if (input == "0")
+        {
+            // Geri dön
+            return;
+        }
+
+        if (int.TryParse(input, out int selectedIndex) &&
+            selectedIndex >= 1 &&
+            selectedIndex <= petTypes.Count)
+        {
+            PetType selectedType = petTypes[selectedIndex - 1];
+
+            Console.Write("Enter a name for your pet: ");
+            string name = Console.ReadLine();
+
+            _currentPet = new Pet
+            {
+                Name = name,
+                Type = selectedType,
+                Hunger = 50,
+                Sleep = 50,
+                Fun = 50
+            };
+
+            Console.WriteLine($"{name} the {selectedType} has been adopted!");
+            await Task.Delay(1500);
+        }
+        else
+        {
+            Console.WriteLine("Invalid choice. Returning to main menu.");
+            await Task.Delay(1000);
+        }
     }
 
-    
-    
+
     
     
     
@@ -172,7 +167,7 @@ public class Game
             .Where(item => item.CompatibleWith.Contains(_currentPet.Type))
             .ToList();
 
-        var itemMenu = new Menu<Item>("Select an Item to Use", compatibleItems, item => 
+        var itemMenu = new Menu<Item>("Select an Item to Use", compatibleItems, item =>
             $"{item.Name} (Affects: {item.AffectedStat}, +{item.EffectAmount})");
 
         var selectedItem = itemMenu.ShowAndGetSelection();
@@ -190,25 +185,37 @@ public class Game
 
     
     
-
-    private void ShowPetStats()
+    
+    private void StartStatDecreaseLoop()
     {
-        Console.Clear();
+        _statDecreaseCts?.Cancel();
+        _statDecreaseCts = new CancellationTokenSource();
+        var token = _statDecreaseCts.Token;
 
-        if (_currentPet == null)
+        _ = Task.Run(async () =>
         {
-            Console.WriteLine("You haven't adopted a pet yet!");
-        }
-        else
-        {
-            Console.WriteLine($"Name: {_currentPet.Name}");
-            Console.WriteLine($"Type: {_currentPet.Type}");
-            Console.WriteLine($"Hunger: {_currentPet.Hunger}");
-            Console.WriteLine($"Sleep: {_currentPet.Sleep}");
-            Console.WriteLine($"Fun: {_currentPet.Fun}");
-        }
+            while (!token.IsCancellationRequested)
+            {
+                await Task.Delay(1000);
 
-        Console.WriteLine("\nPress any key to return to the menu...");
-        Console.ReadKey();
+                if (_currentPet != null && !_petIsDead)
+                {
+                    _currentPet.Hunger = Math.Max(0, _currentPet.Hunger - 1);
+                    _currentPet.Sleep = Math.Max(0, _currentPet.Sleep - 1);
+                    _currentPet.Fun = Math.Max(0, _currentPet.Fun - 1);
+
+                    if (_currentPet.Hunger == 0 || _currentPet.Sleep == 0 || _currentPet.Fun == 0)
+                    {
+                        _petIsDead = true;
+                        
+                        Console.Clear();
+                        Console.WriteLine($"Sorry! {_currentPet.Name} has died because of neglect.");
+                        Console.WriteLine("Press any key to exit...");
+                        Console.ReadKey();
+                        Environment.Exit(0);
+                    }
+                }
+            }
+        });
     }
 }
