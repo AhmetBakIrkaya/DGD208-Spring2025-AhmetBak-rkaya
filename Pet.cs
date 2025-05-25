@@ -6,6 +6,16 @@
     public int Fun { get; set; } = 50;
     public int Sleep { get; set; } = 50;
 
+    public bool IsDead => Hunger == 0 || Fun == 0 || Sleep == 0;
+
+    public Pet() { }
+
+    public Pet(string name, PetType type)
+    {
+        Name = name;
+        Type = type;
+    }
+
     public void ApplyItemEffect(Item item)
     {
         switch (item.AffectedStat)
@@ -29,5 +39,12 @@
         Console.WriteLine($"Hunger: {Hunger}/100");
         Console.WriteLine($"Fun: {Fun}/100");
         Console.WriteLine($"Sleep: {Sleep}/100");
+    }
+
+    public void DecreaseStats()
+    {
+        Hunger = Math.Max(0, Hunger - 1);
+        Fun = Math.Max(0, Fun - 1);
+        Sleep = Math.Max(0, Sleep - 1);
     }
 }

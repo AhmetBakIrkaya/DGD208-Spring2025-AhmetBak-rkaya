@@ -1,28 +1,38 @@
 public class Game
 {
     private bool _isRunning;
-    private bool _petIsDead;
-    private Pet _currentPet;
-
+    private List<Pet> _ownedPets = new List<Pet>();
+    private const int MaxPets = 3;
     private CancellationTokenSource _statDecreaseCts;
+    private bool _hasAdoptedPetBefore = false; // Daha önce evcil hayvan sahiplenildi mi takibi
 
     public async Task Start()
     {
         _isRunning = true;
-        _petIsDead = false;
-
-        // Stat azaltma işlemini başlat
         StartStatDecreaseLoop();
 
         while (_isRunning)
         {
-            if (_petIsDead && _currentPet != null)
+            _ownedPets.RemoveAll(pet => pet.IsDead);
+
+            if (_ownedPets.Count == 0)
             {
-                Console.Clear();
-                Console.WriteLine($"Sorry! {_currentPet.Name} has died because of neglect.");
-                Console.WriteLine("Press any key to exit...");
-                Console.ReadKey();
-                Environment.Exit(0);
+                if (_hasAdoptedPetBefore)
+                {
+                    Console.Clear();
+                    Console.WriteLine("All your pets have died due to neglect. Game over.");
+                    Console.WriteLine("Press any key to exit...");
+                    Console.ReadKey();
+                    Environment.Exit(0);
+                }
+                else
+                {
+                    Console.Clear();
+                    Console.WriteLine("You have no pets currently.");
+                    Console.WriteLine("Please adopt a pet to continue playing.");
+                    Console.WriteLine("Press any key to go to the main menu...");
+                    Console.ReadKey();
+                }
             }
 
             ShowMainMenu();
@@ -34,9 +44,6 @@ public class Game
         Console.ReadKey();
     }
 
-    
-    
-    
     private void ShowMainMenu()
     {
         Console.Clear();
@@ -45,14 +52,12 @@ public class Game
         Console.WriteLine();
         Console.WriteLine("1. Adopt a Pet");
         Console.WriteLine("2. View Pet Stats");
-        Console.WriteLine("3. Use an Item on Your Pet");
+        Console.WriteLine("3. Use an Item on a Pet");
         Console.WriteLine("4. Exit Game");
         Console.WriteLine();
         Console.Write("Enter your choice: ");
     }
 
-    
-    
     private async Task ProcessUserChoice(string choice)
     {
         switch (choice)
@@ -75,35 +80,37 @@ public class Game
         }
     }
 
-    
-    
-    
     private void ViewPetStats()
     {
-        if (_currentPet == null)
+        if (_ownedPets.Count == 0)
         {
-            Console.WriteLine("You haven't adopted a pet yet!");
+            Console.WriteLine("You haven't adopted any pets yet!");
         }
         else
         {
             Console.Clear();
             Console.WriteLine("=== Pet Stats ===");
-            _currentPet.DisplayStats();
+            foreach (var pet in _ownedPets)
+            {
+                pet.DisplayStats();
+                Console.WriteLine();
+            }
         }
-
         Console.WriteLine("Press any key to return...");
         Console.ReadKey();
     }
 
-
-    
-    
-    
-    
     private async Task AdoptPet()
     {
-        var petTypes = Enum.GetValues(typeof(PetType)).Cast<PetType>().ToList();
+        if (_ownedPets.Count >= MaxPets)
+        {
+            Console.WriteLine("You already own the maximum number of pets (3).");
+            Console.WriteLine("Press any key to return...");
+            Console.ReadKey();
+            return;
+        }
 
+        var petTypes = Enum.GetValues(typeof(PetType)).Cast<PetType>().ToList();
         Console.WriteLine("Select a Pet to Adopt:");
         Console.WriteLine("0. Go Back");
 
@@ -116,28 +123,18 @@ public class Game
         string input = Console.ReadLine();
 
         if (input == "0")
-        {
-            // Geri dön
             return;
-        }
 
-        if (int.TryParse(input, out int selectedIndex) &&
-            selectedIndex >= 1 &&
-            selectedIndex <= petTypes.Count)
+        if (int.TryParse(input, out int selectedIndex) && selectedIndex >= 1 && selectedIndex <= petTypes.Count)
         {
             PetType selectedType = petTypes[selectedIndex - 1];
 
             Console.Write("Enter a name for your pet: ");
             string name = Console.ReadLine();
 
-            _currentPet = new Pet
-            {
-                Name = name,
-                Type = selectedType,
-                Hunger = 50,
-                Sleep = 50,
-                Fun = 50
-            };
+            var pet = new Pet(name, selectedType);
+            _ownedPets.Add(pet);
+            _hasAdoptedPetBefore = true;  // Sahiplenme bilgisi güncellendi
 
             Console.WriteLine($"{name} the {selectedType} has been adopted!");
             await Task.Delay(1500);
@@ -149,22 +146,23 @@ public class Game
         }
     }
 
-
-    
-    
-    
     private async Task UseItemOnPet()
     {
-        if (_currentPet == null)
+        if (_ownedPets.Count == 0)
         {
-            Console.WriteLine("You haven't adopted a pet yet!");
+            Console.WriteLine("You haven't adopted any pets yet!");
             Console.WriteLine("Press any key to return...");
             Console.ReadKey();
             return;
         }
 
+        var petMenu = new Menu<Pet>("Select a pet to use an item on", _ownedPets, pet => $"{pet.Name} the {pet.Type}");
+        var selectedPet = petMenu.ShowAndGetSelection();
+        if (selectedPet == null)
+            return;
+
         var compatibleItems = ItemDatabase.AllItems
-            .Where(item => item.CompatibleWith.Contains(_currentPet.Type))
+            .Where(item => item.CompatibleWith.Contains(selectedPet.Type))
             .ToList();
 
         var itemMenu = new Menu<Item>("Select an Item to Use", compatibleItems, item =>
@@ -174,18 +172,15 @@ public class Game
         if (selectedItem == null)
             return;
 
-        Console.WriteLine($"{_currentPet.Name} is using {selectedItem.Name}...");
+        Console.WriteLine($"{selectedPet.Name} is using {selectedItem.Name}...");
         await Task.Delay(TimeSpan.FromSeconds(selectedItem.Duration));
-        _currentPet.ApplyItemEffect(selectedItem);
+        selectedPet.ApplyItemEffect(selectedItem);
 
-        Console.WriteLine($"{selectedItem.Name} used! Stat updated.");
+        Console.WriteLine("Item used! Stat updated.");
         Console.WriteLine("Press any key to continue...");
         Console.ReadKey();
     }
 
-    
-    
-    
     private void StartStatDecreaseLoop()
     {
         _statDecreaseCts?.Cancel();
@@ -197,23 +192,9 @@ public class Game
             while (!token.IsCancellationRequested)
             {
                 await Task.Delay(1000);
-
-                if (_currentPet != null && !_petIsDead)
+                foreach (var pet in _ownedPets)
                 {
-                    _currentPet.Hunger = Math.Max(0, _currentPet.Hunger - 1);
-                    _currentPet.Sleep = Math.Max(0, _currentPet.Sleep - 1);
-                    _currentPet.Fun = Math.Max(0, _currentPet.Fun - 1);
-
-                    if (_currentPet.Hunger == 0 || _currentPet.Sleep == 0 || _currentPet.Fun == 0)
-                    {
-                        _petIsDead = true;
-                        
-                        Console.Clear();
-                        Console.WriteLine($"Sorry! {_currentPet.Name} has died because of neglect.");
-                        Console.WriteLine("Press any key to exit...");
-                        Console.ReadKey();
-                        Environment.Exit(0);
-                    }
+                    pet.DecreaseStats();
                 }
             }
         });
