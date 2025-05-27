@@ -4,7 +4,7 @@ public class Game
     private List<Pet> _ownedPets = new List<Pet>();
     private const int MaxPets = 3;
     private CancellationTokenSource _statDecreaseCts;
-    private bool _hasAdoptedPetBefore = false; // Daha önce evcil hayvan sahiplenildi mi takibi
+    private bool _hasAdoptedPetBefore = false;
 
     public async Task Start()
     {
@@ -133,8 +133,9 @@ public class Game
             string name = Console.ReadLine();
 
             var pet = new Pet(name, selectedType);
+            pet.PetDied += OnPetDeath; // Olayı dinliyoruz
             _ownedPets.Add(pet);
-            _hasAdoptedPetBefore = true;  // Sahiplenme bilgisi güncellendi
+            _hasAdoptedPetBefore = true;
 
             Console.WriteLine($"{name} the {selectedType} has been adopted!");
             await Task.Delay(1500);
@@ -192,11 +193,19 @@ public class Game
             while (!token.IsCancellationRequested)
             {
                 await Task.Delay(1000);
-                foreach (var pet in _ownedPets)
+                foreach (var pet in _ownedPets.ToList()) // .ToList() ekledik çünkü liste değişebilir
                 {
                     pet.DecreaseStats();
                 }
             }
         });
+    }
+
+    private void OnPetDeath(Pet pet)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine($"\nOh no! {pet.Name} the {pet.Type} has died due to poor care!");
+        Console.ResetColor();
+        _ownedPets.Remove(pet);
     }
 }

@@ -1,5 +1,7 @@
 ﻿public class Pet
 {
+    public event Action<Pet> PetDied;
+
     public string Name { get; set; }
     public PetType Type { get; set; }
     public int Hunger { get; set; } = 50;
@@ -7,8 +9,6 @@
     public int Sleep { get; set; } = 50;
 
     public bool IsDead => Hunger == 0 || Fun == 0 || Sleep == 0;
-
-    public Pet() { }
 
     public Pet(string name, PetType type)
     {
@@ -46,5 +46,10 @@
         Hunger = Math.Max(0, Hunger - 1);
         Fun = Math.Max(0, Fun - 1);
         Sleep = Math.Max(0, Sleep - 1);
+
+        if (IsDead)
+        {
+            PetDied?.Invoke(this);
+        }
     }
 }
