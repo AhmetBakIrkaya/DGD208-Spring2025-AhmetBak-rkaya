@@ -133,7 +133,7 @@ public class Game
             string name = Console.ReadLine();
 
             var pet = new Pet(name, selectedType);
-            pet.PetDied += OnPetDeath; // Olayı dinliyoruz
+            pet.PetDied += OnPetDeath; 
             _ownedPets.Add(pet);
             _hasAdoptedPetBefore = true;
 
@@ -193,7 +193,7 @@ public class Game
             while (!token.IsCancellationRequested)
             {
                 await Task.Delay(1000);
-                foreach (var pet in _ownedPets.ToList()) // .ToList() ekledik çünkü liste değişebilir
+                foreach (var pet in _ownedPets.ToList()) 
                 {
                     pet.DecreaseStats();
                 }

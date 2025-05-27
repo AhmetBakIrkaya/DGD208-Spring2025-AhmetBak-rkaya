@@ -96,7 +96,7 @@ public static class ItemDatabase
             Name = "Bird Swing",
             AffectedStat = PetStat.Fun,
             EffectAmount = 15,
-            Duration = 2,
+            Duration = 3,
             CompatibleWith = new List<PetType> { PetType.Bird }
         },
         new Item
