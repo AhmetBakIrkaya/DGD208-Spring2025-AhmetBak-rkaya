@@ -4,7 +4,7 @@ public static class ItemDatabase
 {
     public static List<Item> AllItems = new List<Item>
     {
-        // DOG
+        
         new Item
         {
             Name = "Dog Bone",
@@ -30,7 +30,7 @@ public static class ItemDatabase
             CompatibleWith = new List<PetType> { PetType.Dog }
         },
 
-        // CAT
+        
         new Item
         {
             Name = "Cat Toy",
@@ -56,7 +56,7 @@ public static class ItemDatabase
             CompatibleWith = new List<PetType> { PetType.Cat }
         },
 
-        // TURTLE
+        
         new Item
         {
             Name = "Turtle Heater Stone",
@@ -82,7 +82,7 @@ public static class ItemDatabase
             CompatibleWith = new List<PetType> { PetType.Turtle }
         },
 
-        // BIRD
+        
         new Item
         {
             Name = "Bird Treat",
@@ -108,7 +108,7 @@ public static class ItemDatabase
             CompatibleWith = new List<PetType> { PetType.Bird }
         },
 
-        // FISH
+        
         new Item
         {
             Name = "Fish Flakes",
@@ -134,7 +134,7 @@ public static class ItemDatabase
             CompatibleWith = new List<PetType> { PetType.Fish }
         },
 
-        // RABBIT
+        
         new Item
         {
             Name = "Rabbit Carrot Snack",
@@ -160,7 +160,7 @@ public static class ItemDatabase
             CompatibleWith = new List<PetType> { PetType.Rabbit }
         },
         
-        // UNIVERSAL ITEMS
+        
         
         new Item
         {
